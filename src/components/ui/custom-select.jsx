@@ -4,7 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 
-export function CustomSelect({ label, value, options, onChange, placeholder = "Select an option" }) {
+export function CustomSelect({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = "Select an option",
+  compact = false,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -28,7 +35,7 @@ export function CustomSelect({ label, value, options, onChange, placeholder = "S
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`input-2026 flex items-center justify-between transition-all ${
+        className={`${compact ? "h-[44px] rounded-xl border border-[#E8E2D9] bg-white px-3 text-sm font-semibold text-[#1A1A2E]" : "input-2026"} flex items-center justify-between transition-all ${
           isOpen ? "border-[#9d7b32] ring-4 ring-[#9d7b32]/10" : ""
         }`}
       >

@@ -1,25 +1,53 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { clearAdminSessionToken, getAdminSessionToken } from "@/lib/client-session";
+import { useEffect, useState } from "react";
+import {
+  clearAdminSessionToken,
+  getAdminSessionToken,
+} from "@/lib/client-session";
 
 const navGroups = [
   {
     heading: "Operations",
     items: [
-      { href: "/admin/scanner", label: "Scanner", description: "Default live check-in" },
-      { href: "/admin/attendance", label: "Attendance", description: "Service records" },
+      {
+        href: "/admin/scanner",
+        label: "Scanner",
+        description: "Default live check-in",
+      },
+      {
+        href: "/admin/attendance",
+        label: "Attendance",
+        description: "Service records",
+      },
     ],
   },
   {
     heading: "Records",
     items: [
-      { href: "/admin/members", label: "Directory", description: "Browse profiles" },
-      { href: "/admin/members/add", label: "Add Member", description: "Create new profile" },
-      { href: "/admin/cards", label: "Cards", description: "Printable QR cards" },
-      { href: "/admin/dashboard", label: "Overview", description: "Quick summary" },
+      {
+        href: "/admin/members",
+        label: "Directory",
+        description: "Browse profiles",
+      },
+      {
+        href: "/admin/members/add",
+        label: "Add Member",
+        description: "Create new profile",
+      },
+      {
+        href: "/admin/cards",
+        label: "Cards",
+        description: "Printable QR cards",
+      },
+      {
+        href: "/admin/dashboard",
+        label: "Overview",
+        description: "Quick summary",
+      },
     ],
   },
 ];
@@ -28,6 +56,10 @@ export function AdminShell({ title, children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   function isItemActive(item) {
     return pathname === item.href;
@@ -44,35 +76,89 @@ export function AdminShell({ title, children }) {
   }
 
   return (
-    <div className="min-h-screen text-[#2b2222]">
-      <div className="grid min-h-screen w-full gap-0 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-[#ece3e3] bg-[linear-gradient(180deg,#fffdfd_0%,#fbf6f6_100%)] lg:block">
-          <div className="sticky top-0 flex h-screen flex-col p-5 xl:p-6">
-            <div className="surface border-[#ece3e3] bg-white/90 px-5 py-5 shadow-[0_10px_30px_rgba(85,30,30,0.06)]">
-              <p className="text-[11px] uppercase tracking-[0.32em] text-[#8a2424]">Church Attendance</p>
-              <h1 className="mt-2 text-3xl font-semibold text-[#4a2e2e]">Admin Console</h1>
-              <p className="mt-2 text-sm leading-relaxed text-[#685757]">Scanner-first operations with management tools separated for faster admin work.</p>
+    <div className="min-h-screen">
+      <div className="grid min-h-screen w-full gap-0 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
+        {/* ── Desktop Sidebar ── */}
+        <aside
+          className="hidden lg:flex lg:flex-col"
+          style={{
+            background: "linear-gradient(180deg, #1E3A5F 0%, #0D1B2E 100%)",
+          }}
+        >
+          <div className="sticky top-0 flex h-screen flex-col overflow-y-auto">
+            {/* Branding */}
+            <div className="px-5 pb-5 pt-6">
+              <div className="flex items-center gap-3">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white/80 shadow-md">
+                  <Image
+                    src="/logo_1.jpg"
+                    alt="Church Logo"
+                    fill
+                    sizes="40px"
+                    priority
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white/80 shadow-md">
+                  <Image
+                    src="/logo_2.png"
+                    alt="Ministry Logo"
+                    fill
+                    sizes="40px"
+                    priority
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              </div>
+
+              <h2
+                className="mt-3 text-[18px] font-semibold leading-snug text-white"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Saint Anthony of Padua
+              </h2>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-[#C9A84C]">
+                Ministry of Lectors &amp; Commentators
+              </p>
+              <hr className="mt-4 border-[#C9A84C]/20" />
             </div>
 
-            <nav className="mt-5 space-y-4">
+            {/* Nav Groups */}
+            <nav className="flex-1 overflow-y-auto px-3 pb-3">
               {navGroups.map((group) => (
-                <section key={group.heading} className="surface-soft p-3 xl:p-4">
-                  <h2 className="px-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7a1f1f]">{group.heading}</h2>
-                  <div className="mt-3 grid gap-2">
+                <section key={group.heading} className="mb-5">
+                  <h3 className="mb-2 px-2 text-[9px] font-bold uppercase tracking-widest text-[#C9A84C]">
+                    {group.heading}
+                  </h3>
+                  <div className="space-y-1">
                     {group.items.map((item) => {
                       const active = isItemActive(item);
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`rounded-2xl border px-4 py-3 transition ${
+                          className={`flex flex-col rounded-xl px-4 py-3 transition-all ${
                             active
-                              ? "border-[#8a2424] bg-white text-[#4f2525] shadow-[0_8px_18px_rgba(122,31,31,0.08)]"
-                              : "border-transparent bg-transparent text-[#4f4141] hover:border-[#ece3e3] hover:bg-white"
+                              ? "bg-[rgba(201,168,76,0.15)]"
+                              : "hover:bg-[rgba(255,255,255,0.08)]"
                           }`}
+                          style={
+                            active
+                              ? {
+                                  border: "1px solid rgba(201,168,76,0.4)",
+                                  borderLeft: "3px solid #C9A84C",
+                                }
+                              : { border: "1px solid transparent" }
+                          }
                         >
-                          <p className="text-sm font-semibold">{item.label}</p>
-                          <p className="mt-0.5 text-xs text-[#7f6d6d]">{item.description}</p>
+                          <p className="text-sm font-semibold text-white">
+                            {item.label}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/60">
+                            {item.description}
+                          </p>
                         </Link>
                       );
                     })}
@@ -81,29 +167,71 @@ export function AdminShell({ title, children }) {
               ))}
             </nav>
 
-            <div className="mt-auto pt-5">
-              <button type="button" onClick={handleLogout} className="btn-ghost w-full px-4 py-3 text-sm font-semibold">
+            {/* Logout */}
+            <div className="px-3 pb-5 pt-2">
+              <hr className="mb-4 border-[#C9A84C]/20" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10"
+              >
                 Logout
               </button>
             </div>
           </div>
         </aside>
 
-        <div className="min-w-0 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-          <header data-admin-shell-header className="surface mb-5 overflow-hidden lg:hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-[#ece3e3] px-4 py-4 md:px-5">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#8a2424]">Church Attendance</p>
-                <h1 className="mt-1 text-2xl font-semibold text-[#5a3a3a]">Admin Console</h1>
+        {/* ── Main Content Column ── */}
+        <div className="min-w-0 px-2 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
+          {/* Mobile Header */}
+          <header
+            data-admin-shell-header
+            className="sticky top-0 z-50 mb-4 overflow-visible rounded-2xl shadow-lg lg:hidden"
+            style={{ background: "#1E3A5F" }}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white/70">
+                  <Image
+                    src="/logo_1.jpg"
+                    alt="Church Logo"
+                    fill
+                    sizes="32px"
+                    priority
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#C9A84C]">
+                    Ministry of Lectors &amp; Commentators
+                  </p>
+                  <h1
+                    className="truncate text-[17px] font-semibold leading-tight text-white"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {title || "Saint Anthony of Padua"}
+                  </h1>
+                </div>
               </div>
 
               <button
                 type="button"
-                className="btn-ghost inline-flex h-10 w-10 items-center justify-center p-0 lg:hidden"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 text-white transition-all hover:bg-white/10 lg:hidden"
                 onClick={() => setMobileOpen((prev) => !prev)}
                 aria-label="Toggle menu"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <line x1="3" y1="6" x2="21" y2="6" />
                   <line x1="3" y1="12" x2="21" y2="12" />
                   <line x1="3" y1="18" x2="21" y2="18" />
@@ -112,11 +240,16 @@ export function AdminShell({ title, children }) {
             </div>
 
             {mobileOpen ? (
-              <nav className="space-y-3 px-4 py-4 lg:hidden">
+              <nav
+                className="max-h-[70vh] overflow-y-auto px-3 pb-4 pt-2 lg:hidden"
+                style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}
+              >
                 {navGroups.map((group) => (
-                  <section key={group.heading} className="surface-soft p-3">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7a1f1f]">{group.heading}</h2>
-                    <div className="mt-2 grid gap-2">
+                  <section key={group.heading} className="mb-4">
+                    <h3 className="mb-2 px-2 text-[9px] font-bold uppercase tracking-widest text-[#C9A84C]">
+                      {group.heading}
+                    </h3>
+                    <div className="space-y-1">
                       {group.items.map((item) => {
                         const active = pathname === item.href;
                         return (
@@ -124,14 +257,26 @@ export function AdminShell({ title, children }) {
                             key={item.href}
                             href={item.href}
                             onClick={() => setMobileOpen(false)}
-                            className={`rounded-xl border px-3 py-2.5 transition ${
+                            className={`flex flex-col rounded-xl px-3 py-2.5 transition-all ${
                               active
-                                ? "border-[#8a2424] bg-[linear-gradient(145deg,#f4e6e6,#eadbdb)] text-[#4f2525]"
-                                : "border-[#ece3e3] bg-white text-[#4f4141]"
+                                ? "bg-[rgba(201,168,76,0.15)]"
+                                : "hover:bg-[rgba(255,255,255,0.08)]"
                             }`}
+                            style={
+                              active
+                                ? {
+                                    border: "1px solid rgba(201,168,76,0.4)",
+                                    borderLeft: "3px solid #C9A84C",
+                                  }
+                                : { border: "1px solid transparent" }
+                            }
                           >
-                            <p className="text-sm font-semibold">{item.label}</p>
-                            <p className="mt-0.5 text-xs text-[#7f6d6d]">{item.description}</p>
+                            <p className="text-sm font-semibold text-white">
+                              {item.label}
+                            </p>
+                            <p className="mt-0.5 text-xs text-white/60">
+                              {item.description}
+                            </p>
                           </Link>
                         );
                       })}
@@ -139,16 +284,19 @@ export function AdminShell({ title, children }) {
                   </section>
                 ))}
 
-                <button type="button" onClick={handleLogout} className="btn-ghost w-full px-4 py-2.5 text-sm font-semibold">
+                <hr className="mb-3 border-[#C9A84C]/20" />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10"
+                >
                   Logout
                 </button>
               </nav>
             ) : null}
           </header>
 
-          <main className="w-full space-y-5 lg:space-y-6">
-            {children}
-          </main>
+          <main className="w-full space-y-4 pb-4 lg:space-y-6">{children}</main>
         </div>
       </div>
     </div>

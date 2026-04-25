@@ -36,6 +36,35 @@ function writeLocalDayMap(map) {
   localStorage.setItem(LOCAL_DAY_KEY, JSON.stringify(map));
 }
 
+function getFeedItemStyle(status) {
+  if (status === "Accepted" || status === "Synced") {
+    return {
+      borderColor: "#16A34A",
+      background: "#F0FDF4",
+      textColor: "#16A34A",
+    };
+  }
+  if (status === "Already Recorded") {
+    return {
+      borderColor: "#D97706",
+      background: "#FFFBEB",
+      textColor: "#D97706",
+    };
+  }
+  if (status === "Queued Offline" || status === "Already Queued") {
+    return {
+      borderColor: "#1E3A5F",
+      background: "#EFF6FF",
+      textColor: "#1E3A5F",
+    };
+  }
+  return {
+    borderColor: "#DC2626",
+    background: "#FEF2F2",
+    textColor: "#DC2626",
+  };
+}
+
 export default function ScannerPage() {
   const scannerRef = useRef(null);
   const lastScanRef = useRef({ token: null, time: 0 });
@@ -48,14 +77,20 @@ export default function ScannerPage() {
   const [scanFlash, setScanFlash] = useState(null);
 
   function ensureAudio() {
-    if (typeof window === "undefined" || audioRef.current) return audioRef.current;
+    if (typeof window === "undefined" || audioRef.current)
+      return audioRef.current;
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextCtor) return null;
     audioRef.current = new AudioContextCtor();
     return audioRef.current;
   }
 
-  async function playTone(frequency, duration = 0.08, gainValue = 0.04, type = "sine") {
+  async function playTone(
+    frequency,
+    duration = 0.08,
+    gainValue = 0.04,
+    type = "sine",
+  ) {
     const context = ensureAudio();
     if (!context) return;
     if (context.state === "suspended") {
@@ -74,7 +109,10 @@ export default function ScannerPage() {
     oscillator.connect(gainNode);
     gainNode.connect(context.destination);
     oscillator.start();
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.0001,
+      context.currentTime + duration,
+    );
     oscillator.stop(context.currentTime + duration + 0.02);
   }
 
@@ -110,7 +148,10 @@ export default function ScannerPage() {
 
   async function processScan(qrToken) {
     const now = Date.now();
-    if (lastScanRef.current.token === qrToken && now - lastScanRef.current.time < 3000) {
+    if (
+      lastScanRef.current.token === qrToken &&
+      now - lastScanRef.current.time < 3000
+    ) {
       return; // Ignore rapid duplicate scans of the same code within 3 seconds
     }
     lastScanRef.current = { token: qrToken, time: now };
@@ -122,14 +163,22 @@ export default function ScannerPage() {
         const response = await apiFetch("/api/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entries: [{ qrToken, serviceDate, source: "online" }] }),
+          body: JSON.stringify({
+            entries: [{ qrToken, serviceDate, source: "online" }],
+          }),
         });
         const result = response.results?.[0];
         if (result?.status === "ok") {
-          log({ status: "Accepted", text: `${result.member.last_name}, ${result.member.first_name}` });
+          log({
+            status: "Accepted",
+            text: `${result.member.last_name}, ${result.member.first_name}`,
+          });
           triggerFeedback("success");
         } else if (result?.status === "duplicate") {
-          log({ status: "Already Recorded", text: `${result.member.last_name}, ${result.member.first_name}` });
+          log({
+            status: "Already Recorded",
+            text: `${result.member.last_name}, ${result.member.first_name}`,
+          });
           triggerFeedback("duplicate");
           Swal.fire({
             icon: "warning",
@@ -138,9 +187,10 @@ export default function ScannerPage() {
             showConfirmButton: false,
             timer: 3000,
             customClass: {
-              popup: "!rounded-[32px] border-2 border-[#e6dbdb] bg-white shadow-2xl p-4",
+              popup:
+                "!rounded-[32px] border-2 border-[#e6dbdb] bg-white shadow-2xl p-4",
               title: "text-2xl font-black text-[#8a2424]",
-            }
+            },
           });
         } else {
           log({ status: "Unknown QR", text: qrToken });
@@ -162,15 +212,21 @@ export default function ScannerPage() {
         showConfirmButton: false,
         timer: 3000,
         customClass: {
-          popup: "!rounded-[32px] border-2 border-[#e6dbdb] bg-white shadow-2xl p-4",
+          popup:
+            "!rounded-[32px] border-2 border-[#e6dbdb] bg-white shadow-2xl p-4",
           title: "text-2xl font-black text-[#8a2424]",
-        }
+        },
       });
       return;
     }
 
     const queue = readQueue();
-    queue.push({ qrToken, serviceDate, scannedAt: new Date().toISOString(), source: "offline-sync" });
+    queue.push({
+      qrToken,
+      serviceDate,
+      scannedAt: new Date().toISOString(),
+      source: "offline-sync",
+    });
     dayMap[localKey] = true;
     writeQueue(queue);
     writeLocalDayMap(dayMap);
@@ -206,7 +262,10 @@ export default function ScannerPage() {
       setIsOnline(true);
     } catch {
       setIsOnline(false);
-      log({ status: "Sync Failed", text: "Still offline or server unreachable." });
+      log({
+        status: "Sync Failed",
+        text: "Still offline or server unreachable.",
+      });
       triggerFeedback("error");
     }
   }
@@ -255,7 +314,7 @@ export default function ScannerPage() {
       async (decodedText) => {
         await processScan(decodedText.trim());
       },
-      () => null
+      () => null,
     );
     setStarted(true);
   }
@@ -276,65 +335,186 @@ export default function ScannerPage() {
     <RequireAdmin>
       <AdminShell title="QR Scanner">
         <div className="w-full space-y-6">
-          <section className="surface px-5 py-5 lg:px-6 lg:py-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* ── Page Header ── */}
+          <section className="surface px-6 py-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-[#8a2424]">Live Operations</p>
-                <h2 className="mt-1 text-3xl font-semibold text-[#4f3030]">QR Scanner</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#685757]">
-                  Keep the camera centered, scan one member at a time, and use sync when the connection recovers.
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-widest"
+                  style={{ color: "#9D7B32" }}
+                >
+                  Live Operations
+                </p>
+                <h2
+                  className="mt-1 font-(family-name:--font-display) text-[32px] leading-tight"
+                  style={{ color: "#1A1A2E" }}
+                >
+                  QR Scanner
+                </h2>
+                <p
+                  className="mt-2 max-w-xl text-sm leading-relaxed"
+                  style={{ color: "#6B7280" }}
+                >
+                  Keep the camera centered, scan one member at a time, and use
+                  sync when the connection recovers.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <div className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${isOnline ? "bg-[#edf7ee] text-[#2f6d3a]" : "bg-[#f8edea] text-[#9a4939]"}`}>
-                  {isOnline ? "Online" : "Offline"}
-                </div>
-                <div className="rounded-full bg-[#f6efdf] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#8c6c33]">
-                  Queue {queueSize}
-                </div>
+              {/* Status badges */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold"
+                  style={
+                    isOnline
+                      ? { background: "#F0FDF4", color: "#16A34A" }
+                      : { background: "#FEF2F2", color: "#DC2626" }
+                  }
+                >
+                  {isOnline ? "● Online" : "● Offline"}
+                </span>
+                <span
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold"
+                  style={{ background: "#FDF6E3", color: "#9D7B32" }}
+                >
+                  Queue&nbsp;{queueSize}
+                </span>
               </div>
             </div>
           </section>
 
-          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          {/* ── Main Two-Column Layout ── */}
+          <div className="grid gap-6 xl:grid-cols-[11fr_9fr]">
+            {/* ── Camera Section ── */}
             <section className="surface p-5 lg:p-6">
-              <div className={`relative overflow-hidden rounded-[24px] border bg-[#f5f1e8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors ${scanFlash === "success" ? "border-[#8fd29a]" : scanFlash === "duplicate" ? "border-[#e2c07e]" : scanFlash === "queued" ? "border-[#93b7ff]" : scanFlash === "error" ? "border-[#e4a1a1]" : "border-[#e7dcc8]"}`}>
-                <div className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${scanFlash === "success" ? "opacity-100 bg-[radial-gradient(circle_at_center,rgba(47,109,58,0.16),transparent_70%)]" : scanFlash === "duplicate" ? "opacity-100 bg-[radial-gradient(circle_at_center,rgba(154,73,57,0.16),transparent_70%)]" : scanFlash === "queued" ? "opacity-100 bg-[radial-gradient(circle_at_center,rgba(47,77,140,0.14),transparent_70%)]" : scanFlash === "error" ? "opacity-100 bg-[radial-gradient(circle_at_center,rgba(154,73,57,0.14),transparent_70%)]" : "opacity-0"}`} />
-                <div id="reader" className="relative z-10 overflow-hidden" />
+              {/* Camera viewport */}
+              <div
+                className="relative overflow-hidden rounded-2xl"
+                style={{ background: "#F5F2EC" }}
+              >
+                {/* Scan-result flash overlay */}
+                <div
+                  className={`pointer-events-none absolute inset-0 z-10 rounded-2xl transition-all duration-300 ${
+                    scanFlash === "success"
+                      ? "opacity-100 border border-[#16A34A]/30 bg-[radial-gradient(circle_at_center,rgba(22,163,74,0.15),transparent_70%)]"
+                      : scanFlash === "duplicate"
+                        ? "opacity-100 border border-[#D97706]/30 bg-[radial-gradient(circle_at_center,rgba(217,119,6,0.15),transparent_70%)]"
+                        : scanFlash === "queued"
+                          ? "opacity-100 border border-[#1E3A5F]/30 bg-[radial-gradient(circle_at_center,rgba(30,58,95,0.15),transparent_70%)]"
+                          : scanFlash === "error"
+                            ? "opacity-100 border border-[#DC2626]/30 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.15),transparent_70%)]"
+                            : "opacity-0"
+                  }`}
+                />
+                <div id="reader" className="relative z-0 overflow-hidden" />
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button className="btn-primary px-4 py-2.5" onClick={() => { ensureAudio(); void startScanner(); }}>
+              {/* Button row */}
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <button
+                  className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                  onClick={() => {
+                    ensureAudio();
+                    void startScanner();
+                  }}
+                >
+                  {/* Camera icon */}
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
                   Start Camera
                 </button>
-                <button className="btn-ghost px-4 py-2.5" onClick={stopScanner}>
+
+                <button
+                  className="btn-ghost px-5 py-2.5 text-sm font-semibold"
+                  onClick={stopScanner}
+                >
                   Stop
                 </button>
-                <button className="btn-ghost px-4 py-2.5" onClick={syncNow}>
+
+                <button
+                  className="btn-ghost inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                  onClick={syncNow}
+                >
+                  {/* Sync icon */}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
                   Sync Now ({queueSize})
                 </button>
               </div>
             </section>
 
+            {/* ── Scan Feed Section ── */}
             <section className="surface p-5 lg:p-6">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-[#8a2424]">Recent Activity</p>
-                  <h3 className="mt-1 text-xl font-semibold text-[#4f3030]">Scan Feed</h3>
-                </div>
-                <p className="text-xs text-[#6f6060]">Latest 15 events</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3
+                  className="font-(family-name:--font-display) text-xl"
+                  style={{ color: "#1A1A2E" }}
+                >
+                  Scan Feed
+                </h3>
+                <p className="text-xs" style={{ color: "#9D7B32" }}>
+                  Latest 15 events
+                </p>
               </div>
 
-              <div className="mt-4 space-y-2">
-                {feed.length ? feed.map((row, idx) => (
-                  <div key={`${row.status}-${idx}`} className="rounded-2xl border border-[#ebe0e0] bg-[#fbf7f7] px-4 py-3">
-                    <p className="font-semibold text-[#4f3030]">{row.status}</p>
-                    <p className="mt-1 break-all text-sm text-[#6f6060]">{row.text}</p>
-                  </div>
-                )) : (
-                  <div className="rounded-2xl border border-dashed border-[#e5d8d8] bg-white px-4 py-8 text-center text-sm text-[#6f6060]">
-                    Waiting for the first scan.
+              <div className="space-y-2">
+                {feed.length ? (
+                  feed.map((row, idx) => {
+                    const s = getFeedItemStyle(row.status);
+                    return (
+                      <div
+                        key={`${row.status}-${idx}`}
+                        className="rounded-xl px-4 py-3"
+                        style={{
+                          borderLeft: `3px solid ${s.borderColor}`,
+                          background: s.background,
+                        }}
+                      >
+                        <p
+                          className="text-sm font-bold"
+                          style={{ color: s.textColor }}
+                        >
+                          {row.status}
+                        </p>
+                        <p
+                          className="mt-0.5 break-all text-[13px]"
+                          style={{ color: "#4A5568" }}
+                        >
+                          {row.text}
+                        </p>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    className="rounded-2xl border-2 border-dashed px-4 py-10 text-center text-sm"
+                    style={{ borderColor: "#E8E2D9", color: "#6B7280" }}
+                  >
+                    Waiting for the first scan 🙏
                   </div>
                 )}
               </div>
